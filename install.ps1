@@ -33,7 +33,7 @@ Start-Process $file
 
 # Telephone Android branche en USB (debogage USB actif) : y installe aussi l'appli.
 # adb vient des platform-tools de Google, ranges la ou Snoophone les cherche ensuite.
-$apkUrl = 'https://github.com/Snoog43/snoophone-releases/releases/latest/download/Snoophone-android.apk'
+$apkUrl = 'https://snoog43.github.io/snoophone-releases/Snoophone-android.apk'
 try {
     # adb ecrit sur stderr ("daemon started...") : sous Windows PowerShell 5.1 ce ne doit pas etre une erreur.
     $ErrorActionPreference = 'Continue'

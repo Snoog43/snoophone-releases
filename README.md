@@ -18,7 +18,7 @@ Ou télécharge [Snoophone-x64-setup.exe](https://github.com/Snoog43/snoophone-r
 
 Le plus simple : branche le téléphone au PC en USB avec le débogage USB activé (Paramètres › À propos du téléphone › 7 appuis sur « Numéro de build », puis Options pour les développeurs › Débogage USB) avant de lancer la ligne ci-dessus. Elle installe aussi l'appli sur le téléphone.
 
-Sinon, télécharge [Snoophone-android.apk](https://github.com/Snoog43/snoophone-releases/releases/latest/download/Snoophone-android.apk) sur le téléphone et ouvre-le (autorise l'installation depuis le navigateur si Android le demande). Ouvre ensuite Snoophone sur le PC et sur le téléphone pour les appairer.
+Sinon, télécharge [Snoophone-android.apk](https://snoog43.github.io/snoophone-releases/Snoophone-android.apk) sur le téléphone et ouvre-le (autorise l'installation depuis le navigateur si Android le demande). Ouvre ensuite Snoophone sur le PC et sur le téléphone pour les appairer.
 
 ## Code source et licence
 
