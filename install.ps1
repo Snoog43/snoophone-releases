@@ -18,13 +18,31 @@ function Get-File($url, $out, $apiUrl) {
         catch { if ($try -ge 4) { throw }; Start-Sleep -Seconds (2 * $try) }
     }
 }
-$rel = Invoke-RestMethod 'https://api.github.com/repos/Snoog43/snoophone-releases/releases/latest' -UseBasicParsing
-$asset = @($rel.assets | Where-Object name -eq 'Snoophone-x64-setup.exe')[0]
-if (-not $asset) { throw 'Snoophone-x64-setup.exe introuvable dans la derniere version.' }
+# D'abord la page GitHub Pages (latest.json + fichiers, publies par publish-pages.sh) : l'API des
+# releases de GitHub renvoie parfois 504 pendant des heures. L'API reste le secours.
+$pages = 'https://snoog43.github.io/snoophone-releases'
+$info = $null
+try { $info = Invoke-RestMethod "$pages/latest.json?t=$([DateTime]::UtcNow.Ticks)" -UseBasicParsing -ErrorAction Stop } catch {}
+$rel = $null
+if ($info -and $info.setup_sha256) {
+    $tag = $info.tag
+    $setupUrl = "$pages/Snoophone-x64-setup.exe"; $setupApi = $null; $setupHash = $info.setup_sha256
+} else {
+    $rel = $null
+    for ($try = 1; -not $rel; $try++) {
+        try { $rel = Invoke-RestMethod 'https://api.github.com/repos/Snoog43/snoophone-releases/releases/latest' -UseBasicParsing -ErrorAction Stop }
+        catch { if ($try -ge 4) { throw }; Start-Sleep -Seconds (2 * $try) }
+    }
+    $asset = @($rel.assets | Where-Object name -eq 'Snoophone-x64-setup.exe')[0]
+    if (-not $asset) { throw 'Snoophone-x64-setup.exe introuvable dans la derniere version.' }
+    $tag = $rel.tag_name
+    $setupUrl = $asset.browser_download_url; $setupApi = $asset.url
+    $setupHash = if ("$($asset.digest)" -match '^sha256:([0-9a-f]{64})$') { $Matches[1] } else { $null }
+}
 $file = Join-Path $env:TEMP 'Snoophone-x64-setup.exe'
-Write-Host "Snoophone $($rel.tag_name) : telechargement..." -ForegroundColor Cyan
-Get-File $asset.browser_download_url $file $asset.url
-if ("$($asset.digest)" -match '^sha256:([0-9a-f]{64})$' -and (Get-FileHash $file -Algorithm SHA256).Hash -ne $Matches[1]) {
+Write-Host "Snoophone $tag : telechargement..." -ForegroundColor Cyan
+Get-File $setupUrl $file $setupApi
+if ($setupHash -and (Get-FileHash $file -Algorithm SHA256).Hash -ne $setupHash) {
     Remove-Item $file -Force
     throw 'Fichier abime pendant le telechargement (empreinte differente) : relancer la commande.'
 }
@@ -113,11 +131,17 @@ try {
         if ($ready.Count -eq 0) {
             Write-Host "Debogage USB pas autorise sur le telephone : appli Android non installee. Lien : $apkUrl" -ForegroundColor Yellow
         } else {
-            $apkAsset = @($rel.assets | Where-Object name -eq 'Snoophone-android.apk')[0]
             $apk = Join-Path $env:TEMP 'Snoophone-android.apk'
             Write-Host 'Appli Android : telechargement...' -ForegroundColor Cyan
-            Get-File $apkAsset.browser_download_url $apk $apkAsset.url
-            if ("$($apkAsset.digest)" -match '^sha256:([0-9a-f]{64})$' -and (Get-FileHash $apk -Algorithm SHA256).Hash -ne $Matches[1]) {
+            if ($rel) {
+                $apkAsset = @($rel.assets | Where-Object name -eq 'Snoophone-android.apk')[0]
+                Get-File $apkAsset.browser_download_url $apk $apkAsset.url
+                $apkHash = if ("$($apkAsset.digest)" -match '^sha256:([0-9a-f]{64})$') { $Matches[1] } else { $null }
+            } else {
+                Get-File $apkUrl $apk
+                $apkHash = $info.apk_sha256
+            }
+            if ($apkHash -and (Get-FileHash $apk -Algorithm SHA256).Hash -ne $apkHash) {
                 Remove-Item $apk -Force
                 throw 'APK abime pendant le telechargement (empreinte differente).'
             }
