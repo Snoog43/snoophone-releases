@@ -9,7 +9,7 @@ Ton téléphone Android sur ton PC Windows : notifications, messages, appels, fi
 Colle cette ligne dans PowerShell :
 
 ```powershell
-irm https://github.com/Snoog43/snoophone-releases/releases/latest/download/Snoophone-x64-setup.exe -OutFile "$env:TEMP\Snoophone-setup.exe"; Start-Process "$env:TEMP\Snoophone-setup.exe"
+irm https://raw.githubusercontent.com/Snoog43/snoophone-releases/main/install.ps1 | iex
 ```
 
 Ou télécharge [Snoophone-x64-setup.exe](https://github.com/Snoog43/snoophone-releases/releases/latest/download/Snoophone-x64-setup.exe).
