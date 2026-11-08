@@ -65,6 +65,36 @@ try {
         }
         $list
     }
+    # Accorde a Snoophone tout ce qu'il demande, sans rien toucher sur le telephone : autorisations
+    # ordinaires (appels, SMS, contacts, photos, camera, micro...), acces speciaux (tous les fichiers,
+    # parametres systeme, superposition, utilisation), notifications, Ne pas deranger,
+    # accessibilite (controle depuis le PC) et batterie sans restriction.
+    function Grant-All($serial) {
+        $pkg = 'app.snoophone'
+        $inRequested = $false
+        foreach ($line in (& $adb -s $serial shell dumpsys package $pkg 2>$null)) {
+            if ($line -match '^\s*requested permissions:\s*$') { $inRequested = $true; continue }
+            if (-not $inRequested) { continue }
+            if ($line -match ':\s*$') { break }
+            if ($line -match '^\s*(android\.permission\.[A-Z_]+)\s*$' -and $Matches[1] -ne 'android.permission.ACCESS_BACKGROUND_LOCATION') {
+                & $adb -s $serial shell pm grant $pkg $Matches[1] 2>$null | Out-Null
+            }
+        }
+        foreach ($op in 'ACCESS_RESTRICTED_SETTINGS','MANAGE_EXTERNAL_STORAGE','WRITE_SETTINGS','SYSTEM_ALERT_WINDOW','GET_USAGE_STATS','REQUEST_INSTALL_PACKAGES','PROJECT_MEDIA','RUN_IN_BACKGROUND','RUN_ANY_IN_BACKGROUND') {
+            & $adb -s $serial shell appops set $pkg $op allow 2>$null | Out-Null
+        }
+        & $adb -s $serial shell cmd notification allow_listener "$pkg/app.snoophone.android.notifications.NotificationListener" 2>$null | Out-Null
+        & $adb -s $serial shell cmd notification allow_dnd $pkg 2>$null | Out-Null
+        & $adb -s $serial shell dumpsys deviceidle whitelist "+$pkg" 2>$null | Out-Null
+        $svc = "$pkg/app.snoophone.android.mirror.InputService"
+        $cur = (& $adb -s $serial shell settings get secure enabled_accessibility_services 2>$null | Out-String).Trim()
+        if ($cur -notlike "*$svc*") {
+            $new = if ($cur -and $cur -ne 'null') { "${cur}:$svc" } else { $svc }
+            & $adb -s $serial shell settings put secure enabled_accessibility_services "'$new'" 2>$null | Out-Null
+            & $adb -s $serial shell settings put secure accessibility_enabled 1 2>$null | Out-Null
+        }
+    }
+
     $phones = Get-Phones
     if ($phones.Count -eq 0) {
         Write-Host ''
@@ -96,7 +126,9 @@ try {
                 Write-Host "Installation sur $model..." -ForegroundColor Cyan
                 $out = (& $adb -s $serial install -r $apk 2>&1 | Out-String).Trim()
                 if ($out -match 'Success') {
-                    Write-Host "Snoophone installe sur $model. Ouvre-le sur le telephone." -ForegroundColor Green
+                    Write-Host "Snoophone installe sur $model. Autorisations..." -ForegroundColor Cyan
+                    Grant-All $serial
+                    Write-Host "Snoophone installe et tout autorise sur $model. Ouvre-le sur le telephone." -ForegroundColor Green
                 } else {
                     Write-Host "Echec sur ${model} : $out" -ForegroundColor Yellow
                 }
