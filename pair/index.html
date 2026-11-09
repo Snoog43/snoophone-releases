@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<title>Snoophone · Associer</title>
+<link rel="icon" href="../logo.png">
+<style>
+  :root { color-scheme: dark; --bg:#141218; --card:#1d1b22; --text:#e6e0e9; --muted:#a59fae; --primary:#cfbdfe; --on-primary:#2a1b54; }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;
+         background:var(--bg); color:var(--text); font:16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { width:100%; max-width:420px; background:var(--card); border-radius:24px; padding:28px 24px; text-align:center; }
+  img { width:72px; height:72px; }
+  h1 { font-size:22px; margin:12px 0 6px; }
+  p { color:var(--muted); margin:0 0 20px; }
+  a.btn { display:block; padding:14px 18px; border-radius:999px; text-decoration:none; font-weight:600; margin-top:10px; }
+  a.primary { background:var(--primary); color:var(--on-primary); }
+  a.secondary { border:1px solid #49454f; color:var(--text); }
+  .hidden { display:none; }
+  small { display:block; color:var(--muted); margin-top:18px; font-size:13px; }
+</style>
+</head>
+<body>
+<main>
+  <img src="../logo.png" alt="">
+  <h1 id="title">Associer ce téléphone au PC</h1>
+  <p id="text">Ouvre Snoophone pour terminer. Un code à 6 chiffres s'affichera sur les deux appareils.</p>
+  <a id="open" class="btn primary" href="#">Ouvrir dans Snoophone</a>
+  <a id="apk" class="btn secondary" href="https://snoog43.github.io/snoophone-releases/Snoophone-android.apk">Pas encore l'appli ? La télécharger</a>
+  <small>Après l'installation, scanne de nouveau le QR code du PC.</small>
+</main>
+<script>
+  // The pairing details sit after "#": the browser never sends them to the server.
+  var query = location.hash.slice(1);
+  var open = document.getElementById("open");
+  if (!/(^|&)id=/.test(query)) {
+    document.getElementById("title").textContent = "Lien d'association incomplet";
+    document.getElementById("text").textContent = "Scanne de nouveau le QR code affiché par Snoophone sur le PC.";
+    open.classList.add("hidden");
+  } else {
+    // Keep the one-time secret out of the browser history.
+    try { history.replaceState(null, "", location.pathname); } catch (e) {}
+    var apk = document.getElementById("apk").href;
+    var android = /Android/i.test(navigator.userAgent);
+    open.href = android
+      ? "intent://pair?" + query + "#Intent;scheme=snoophone;package=app.snoophone;S.browser_fallback_url=" + encodeURIComponent(apk) + ";end"
+      : "snoophone://pair?" + query;
+    if (android) location.href = open.href;
+  }
+</script>
+</body>
+</html>
