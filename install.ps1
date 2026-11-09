@@ -153,6 +153,10 @@ try {
                     Write-Host "Snoophone installe sur $model. Autorisations..." -ForegroundColor Cyan
                     Grant-All $serial
                     Write-Host "Snoophone installe et tout autorise sur $model. Ouvre-le sur le telephone." -ForegroundColor Green
+                } elseif ($out -match 'not enough space|INSUFFICIENT_STORAGE') {
+                    $free = (& $adb -s $serial shell df -h /data 2>$null | Select-Object -Last 1 | Out-String).Trim() -split '\s+'
+                    $left = if ($free.Count -ge 4) { " (libre : $($free[3]))" } else { '' }
+                    Write-Host "Pas assez de place sur $model$left. Libere au moins 200 Mo (photos, videos, applis inutiles, cache), puis relance cette commande." -ForegroundColor Yellow
                 } else {
                     Write-Host "Echec sur ${model} : $out" -ForegroundColor Yellow
                 }
